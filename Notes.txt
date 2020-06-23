@@ -1,0 +1,5 @@
+git commands
+    -p : designate the project
+    -s : designate the solution
+    -o : designate the output folder
+    
