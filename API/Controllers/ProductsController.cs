@@ -10,12 +10,15 @@ using skinet.Core.Interfaces;
 using skinet.Core.Specifications;
 using skinet.API.DTOs;
 using AutoMapper;
+using skinet.API.Controllers;
+using skinet.API.Errors;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ProductsController : ControllerBase
+    public class ProductsController : BaseApiController
     {
         private readonly IGenericRepository<Product> _productsRepo;
         private readonly IGenericRepository<ProductBrand> _productBrandRepo;
@@ -63,6 +66,9 @@ namespace API.Controllers
         }
 
         [HttpGet("{id}")]
+        //these tell swagger what kind of response it's getting.
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductToReturnDTO>> GetProduct(int id)
         {
             var spec = new ProductsWithTypesAndBrandsSpecification(id);
@@ -73,6 +79,9 @@ namespace API.Controllers
             // return await _productsRepo.GetEntityWithSpec(spec);
 
             var product = await _productsRepo.GetEntityWithSpec(spec);
+
+            if (product is null) return NotFound(new ApiResponse(404));
+
             return _mapper.Map<Product, ProductToReturnDTO>(product);
         }
 
