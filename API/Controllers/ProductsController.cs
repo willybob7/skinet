@@ -13,6 +13,7 @@ using AutoMapper;
 using skinet.API.Controllers;
 using skinet.API.Errors;
 using Microsoft.AspNetCore.Http;
+using skinet.API.Helpers;
 
 namespace API.Controllers
 {
@@ -44,13 +45,20 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<ProductToReturnDTO>>> GetProducts()
+        public async Task<ActionResult<Pagination<ProductToReturnDTO>>> GetProducts(
+            [FromQuery]ProductSpecParams productSpecParams)
         {
             // var products = await _repo.GetProductsAsync();
             // var products = await _productsRepo.ListAllAsync();
-            var spec = new ProductsWithTypesAndBrandsSpecification();
+            var spec = new ProductsWithTypesAndBrandsSpecification(productSpecParams);
+
+            var countSpec = new ProductsWithFiltersForCountSpecification(productSpecParams);
+
+            var totalItems = await _productsRepo.CountAsync(countSpec);
 
             var products = await _productsRepo.ListAsync(spec);
+
+            var data = _mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDTO>>(products);
             // return products.Select(product => new ProductToReturnDTO(){
             //     Id = product.Id,
             //     Name = product.Name,
@@ -61,8 +69,14 @@ namespace API.Controllers
             //     ProductType = product.ProductType.Name
             // }).ToList();
 
-            return Ok(_mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDTO>>(products));
+            var result = new Pagination<ProductToReturnDTO>(){
+                PageIndex = productSpecParams.PageIndex,
+                PageSize = productSpecParams.PageSize,
+                Count = totalItems,
+                Data = data
+            };
 
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
